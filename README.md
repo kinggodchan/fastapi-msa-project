@@ -23,4 +23,5 @@ FastAPI와 MariaDB를 이용한 마이크로서비스 아키텍처(MSA) 프로�
 ## 🚀 배포 방법
 1. **데이터베이스 설정**:
    ```bash
-   kubectl apply -f k8s/mariadb/
+ kubectl apply -f mariadb/
+
