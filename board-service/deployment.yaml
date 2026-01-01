@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: board-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: board-service }
+  template:
+    metadata:
+      labels: { app: board-service }
+    spec:
+      containers:
+      - name: board-app
+        image: ghcr.io/kinggodchan/fastapi-backend:v1.0.2
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DB_HOST
+          value: "mysql"
+        - name: DB_USER
+          value: "test01"
+        - name: DB_PASSWORD
+          value: "P@ssw0rd"
+        - name: DB_NAME
+          value: "fastapi_db"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: board-service
+spec:
+  selector: { app: board-service }
+  ports:
+  - port: 8000
+    targetPort: 8000

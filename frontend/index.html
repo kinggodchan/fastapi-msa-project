@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Website - Home</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="navbar">
+        <div class="logo">My Website</div>
+        <div class="nav-links">
+            <a href="/">홈</a>
+            <a href="/board.html">게시판</a>
+            <span id="auth-menu">
+                <a href="/login.html">로그인</a>
+                <a href="/register.html">회원가입</a>
+            </span>
+        </div>
+    </div>
+
+    <div class="container" style="max-width: 800px;">
+        <h1>환영합니다!</h1>
+        <p>우리 웹사이트에 오신 것을 환영합니다. 배너의 메뉴를 이용해 보세요.</p>
+    </div>
+
+    <script>
+        // 로그인 상태 확인하여 배너 메뉴 변경
+        const token = localStorage.getItem('token');
+        const authMenu = document.getElementById('auth-menu');
+
+        if (token) {
+            authMenu.innerHTML = `
+                <a href="/dashboard.html">내 정보</a>
+                <a href="#" onclick="logout()">로그아웃</a>
+            `;
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            location.reload();
+        }
+    </script>
+</body>
+</html>
+

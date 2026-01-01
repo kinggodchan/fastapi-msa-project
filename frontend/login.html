@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>로그인 - My Website</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="logo">My Website</div>
+        <div class="nav-links">
+            <a href="/">홈</a>
+            <a href="/register.html">회원가입</a>
+            <a href="/index.html">로그인</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>로그인</h2>
+        <input type="text" id="username" placeholder="아이디">
+        <input type="password" id="password" placeholder="비밀번호">
+        <button onclick="login()">로그인</button>
+        <p id="message"></p>
+    </div>
+
+    <script>
+        async function login() {
+            const formData = new FormData();
+            formData.append('username', document.getElementById('username').value);
+            formData.append('password', document.getElementById('password').value);
+
+            try {
+                const response = await fetch('/api/auth/token', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    localStorage.setItem('token', data.access_token);
+                    document.getElementById('message').style.color = "#27ae60";
+                    document.getElementById('message').innerText = "성공! 이동 중...";
+                    setTimeout(() => { window.location.href = "/dashboard.html"; }, 500);
+                } else {
+                    document.getElementById('message').innerText = "실패: " + (data.detail || "오류");
+                }
+            } catch (e) {
+                document.getElementById('message').innerText = "서버 연결 에러";
+            }
+        }
+    </script>
+</body>
+</html>
+

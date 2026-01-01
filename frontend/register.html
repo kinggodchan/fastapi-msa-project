@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>회원가입 - My Website</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="navbar">
+        <div class="logo">My Website</div>
+        <div class="nav-links">
+            <a href="/">홈</a>
+            <a href="/login.html">로그인</a>
+        </div>
+    </div>
+    <div class="container">
+        <h2>회원가입</h2>
+        <input type="text" id="reg-username" placeholder="아이디">
+        <input type="password" id="reg-password" placeholder="비밀번호">
+        <button onclick="register()">가입하기</button>
+        <p id="reg-msg"></p>
+    </div>
+    <script>
+        async function register() {
+            const username = document.getElementById('reg-username').value;
+            const password = document.getElementById('reg-password').value;
+            
+            if(!username || !password) {
+                alert("아이디와 비밀번호를 입력해주세요.");
+                return;
+            }
+
+            const response = await fetch('/api/auth/users/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username, password })
+            });
+
+            if (response.ok) {
+                alert("회원가입 성공! 이제 로그인해주세요.");
+                window.location.href = "/login.html";
+            } else {
+                const data = await response.json();
+                document.getElementById('reg-msg').innerText = "가입 실패: " + (data.detail || "오류 발생");
+                document.getElementById('reg-msg').style.color = "red";
+            }
+        }
+    </script>
+</body>
+</html>

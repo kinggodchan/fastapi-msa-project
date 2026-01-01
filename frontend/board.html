@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>게시판 - My Website</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="navbar">
+        <div class="logo">My Website</div>
+        <div class="nav-links" id="auth-menu">
+            </div>
+    </div>
+
+    <div class="container" style="max-width: 600px;">
+        <h2>게시판</h2>
+
+        <div style="margin-bottom: 30px; border-bottom: 1px solid #ddd; padding-bottom: 20px;">
+            <input type="text" id="post-title" placeholder="제목을 입력하세요">
+            <textarea id="post-content" style="width:100%; height:100px; margin-top:10px;" placeholder="내용을 입력하세요"></textarea>
+            <button onclick="createPost()" style="margin-top:10px;">글쓰기</button>
+        </div>
+
+        <div id="posts-list" style="text-align: left;">
+            <h3>최근 게시글</h3>
+            <div id="loading">불러오는 중...</div>
+        </div>
+    </div>
+
+    <script>
+        // 1. 토큰 확인 및 전역 변수 설정
+        const token = localStorage.getItem('token');
+
+        // 배너 메뉴 업데이트 함수 (추가됨)
+        function updateNavbar() {
+            const authMenu = document.getElementById('auth-menu');
+            if (token) {
+                authMenu.innerHTML = `
+                    <a href="/">홈</a>
+                    <a href="/board.html">게시판</a>
+                    <a href="/dashboard.html">내 정보</a>
+                    <a href="#" onclick="logout()">로그아웃</a>
+                `;
+            } else {
+                authMenu.innerHTML = `
+                    <a href="/">홈</a>
+                    <a href="/login.html">로그인</a>
+                    <a href="/register.html">회원가입</a>
+                `;
+            }
+        }
+
+        if (!token) {
+            alert("로그인이 필요합니다.");
+            window.location.href = "/index.html";
+        }
+
+        // 2. 게시글 목록 불러오기
+        async function fetchPosts() {
+            try {
+                const response = await fetch('/api/board/posts/');
+                if (response.ok) {
+                    const posts = await response.json();
+                    const listDiv = document.getElementById('posts-list');
+                    const loading = document.getElementById('loading');
+                    if(loading) loading.remove();
+
+                    if (posts.length === 0) {
+                        listDiv.innerHTML += "<p id='no-post'>게시글이 없습니다.</p>";
+                    } else {
+                        // 중복 방지를 위해 기존 목록 삭제
+                        const existingPosts = listDiv.querySelectorAll('.post-item');
+                        existingPosts.forEach(p => p.remove());
+
+                        posts.forEach(post => {
+                            const postItem = document.createElement('div');
+                            postItem.className = 'post-item';
+                            postItem.style.borderBottom = "1px solid #eee";
+                            postItem.style.padding = "10px 0";
+                            postItem.innerHTML = `<strong>${post.title}</strong><p>${post.content}</p>`;
+                            listDiv.appendChild(postItem);
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("목록 불러오기 실패:", err);
+            }
+        }
+
+        // 3. 게시글 작성하기
+        async function createPost() {
+            const titleInput = document.getElementById('post-title');
+            const contentInput = document.getElementById('post-content');
+
+            const title = titleInput.value.trim();
+            const content = contentInput.value.trim();
+
+            if (!title || !content) {
+                alert("제목과 내용을 모두 입력해주세요.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/board/posts/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ title, content })
+                });
+
+                if (response.ok) {
+                    alert("글이 등록되었습니다!");
+                    titleInput.value = "";
+                    contentInput.value = "";
+                    fetchPosts(); // 새로고침 대신 목록만 갱신
+                } else {
+                    const errorDetail = await response.json();
+                    alert("글 등록 실패! (사유: " + (errorDetail.detail || "서버 오류") + ")");
+                }
+            } catch (e) {
+                alert("네트워크 연결에 문제가 있습니다.");
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = "/index.html";
+        }
+
+        // 초기 실행
+        updateNavbar(); // 배너 업데이트
+        fetchPosts();   // 게시글 목록 조회
+    </script>
+</body>
+</html>
+

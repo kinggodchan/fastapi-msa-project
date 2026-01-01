@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>대시보드 - My Website</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="logo">My Website</div>
+        <div class="nav-links">
+            <a href="/">홈</a>
+            <a href="/board.html">게시판</a> <a href="#" onclick="logout()">로그아웃</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>비공개 대시보드</h2>
+        <div id="user-info">불러오는 중...</div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) { window.location.href = "/index.html"; }
+
+        async function fetchMyInfo() {
+            const response = await fetch('/api/auth/users/me/', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (response.ok) {
+                const user = await response.json();
+                document.getElementById('user-info').innerHTML = `<p>아이디: ${user.username}</p><p>상태: 활성</p>`;
+            } else { logout(); }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = "/index.html";
+        }
+        fetchMyInfo();
+    </script>
+</body>
+</html>
+
