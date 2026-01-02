@@ -8,5 +8,4 @@ DB_HOST = os.getenv("DB_HOST", "mysql")  # 쿠버네티스 서비스 이름인 '
 DB_NAME = os.getenv("DB_NAME", "fastapi_db")
 
 # 수정된 DATABASE_URL
-DATABASE_URL = "mysql+pymysql://test01:P%40ssw0rd@localhost:3306/fastapi_db"
-
+DATABASE_URL = f"mysql+pymysql://test01:P%40ssw0rd@{DB_HOST}:3306/fastapi_db"
