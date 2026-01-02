@@ -9,5 +9,4 @@ DB_NAME = os.getenv("DB_NAME", "fastapi_db")
 
 
 # 수정된 DATABASE_URL
-DATABASE_URL = "mysql+pymysql://test01:P%40ssw0rd@localhost:3306/fastapi_db"
-
+DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:3306/{DB_NAME}"
