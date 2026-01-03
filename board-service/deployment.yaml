@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: auth-service
+  name: board-service
 spec:
   replicas: 1
   selector:
-    matchLabels: { app: auth-service }
+    matchLabels: { app: board-service }
   template:
     metadata:
-      labels: { app: auth-service }
+      labels: { app: board-service }
     spec:
       containers:
-      - name: auth-app
+      - name: board-app
         # 1. 태그를 :latest로 고정하여 CI(GitHub Actions)와 일치시킵니다.
         image: ghcr.io/kinggodchan/auth-service:latest
         # 2. ArgoCD가 새 이미지를 즉시 감지하고 내려받도록 설정합니다.
@@ -31,9 +31,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: auth-service
+  name: board-service
 spec:
-  selector: { app: auth-service }
+  selector: { app: board-service }
   ports:
   - port: 8000
     targetPort: 8000
