@@ -1,5 +1,5 @@
 # main.py
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
 from typing import List, Union, Any
 from datetime import timedelta
@@ -46,25 +46,22 @@ def read_root():
 
 # --- [ML 추가] 예측(Prediction) 엔드포인트 ---
 @app.post("/predict")
-def predict(payload: Any):  # Any를 사용하여 우선 데이터를 모두 받습니다.
+def predict(payload: Any = Body(...)): # = Body(...)를 추가하여 바디 데이터임을 명시
     if model is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
 
     try:
-        # 1. 데이터 추출 로직
-        # payload가 {'data': [...]} 형태인 경우
+        # 데이터 처리 로직은 동일
         if isinstance(payload, dict) and "data" in payload:
             actual_data = payload["data"]
-        # payload가 바로 리스트 [...] 인 경우
         elif isinstance(payload, list):
             actual_data = payload
         else:
             actual_data = payload
 
-        # 2. 넘파이 배열 변환 및 예측
         input_data = np.array(actual_data).reshape(1, -1)
         prediction = model.predict(input_data)
-        
+
         return {
             "status": "success",
             "input": actual_data,
@@ -72,7 +69,6 @@ def predict(payload: Any):  # Any를 사용하여 우선 데이터를 모두 받
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Prediction error: {str(e)}")
-
 # --------------------------------------------
 
 @app.get("/api/v1/status")
