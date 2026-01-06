@@ -151,3 +151,4 @@ def create_post(post: schemas.PostCreate, db: Session = Depends(database.get_db)
 def read_posts(skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db)):
     return crud.get_posts(db, skip=skip, limit=limit)
 
+# Final deploy check
