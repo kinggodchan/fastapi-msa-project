@@ -10,22 +10,57 @@ import auth
 from fastapi.security import OAuth2PasswordRequestForm
 #from database import SessionLocal, engine, get_db
 
+# --- [ML 추가] 모델 로드용 라이브러리 ---
+import joblib
+import os
+import numpy as np
+# ------------------------------------
+
+
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI()
 
-# DB 세션을 제공하는 의존성 함수 (요청마다 세션 생성 및 종료)
-#def get_db():
-#    db = database.SessionLocal()
-#    try:
-#        yield db
-#    finally:
-#        db.close()
+# --- [ML 추가] 모델 경로 및 전역 변수 설정 ---
+MODEL_PATH = "/app/my_actual_model.pkl"
+model = None
+
+@app.on_event("startup")
+def load_model():
+    global model
+    if os.path.exists(MODEL_PATH):
+        try:
+            model = joblib.load(MODEL_PATH)
+            print(f"✅ 모델 로드 성공: {MODEL_PATH}")
+        except Exception as e:
+            print(f"❌ 모델 로드 중 오류 발생: {e}")
+    else:
+        print(f"⚠️ 모델 파일을 찾을 수 없습니다: {MODEL_PATH}")
+# --------------
 
 # 기본 API 경로
 @app.get("/")
 def read_root():
     return {"Hello": "World from FastAPI"}
+
+# --- [ML 추가] 예측(Prediction) 엔드포인트 ---
+@app.post("/predict")
+def predict(data: list):
+    """
+    간단한 예측 API: 숫자 리스트를 받아 예측 결과를 반환합니다.
+    예: [5.1, 3.5, 1.4, 0.2]
+    """
+    if model is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+
+    try:
+        # 입력 데이터를 numpy 배열로 변환 (모델 형식에 맞게 조정 필요)
+        input_data = np.array(data).reshape(1, -1)
+        prediction = model.predict(input_data)
+        return {"input": data, "prediction": prediction.tolist()}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Prediction error: {str(e)}")
+# --------------------------------------------
 
 @app.get("/api/v1/status")
 def api_status():
