@@ -2,7 +2,7 @@ name: MSA Monorepo CI (Build and Push)
 
 on:
   push:
-    branches: [ "main" ] # main 브랜치에 코드가 push될 때만 실행
+    branches: [ "main" ]
 
 jobs:
   build-and-push:
@@ -11,7 +11,18 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 1. GitHub 컨테이너 저장소(GHCR) 로그인
+      # [추가된 부분] 1. 구글 드라이브에서 모델 파일 다운로드
+      # 빌드 직전에 모델 파일을 각 서비스 폴더로 배달합니다.
+      - name: Download Model from Google Drive
+        run: |
+          # gdown을 사용하여 Secret에 저장한 ID로 모델을 받습니다.
+          # auth-service 폴더로 배달
+          gdown --id ${{ secrets.MODEL_FILE_ID }} -O ./auth-service/my_actual_model.pkl
+          
+          # 만약 다른 서비스(예: board-service)에서도 사용한다면 복사합니다.
+          # cp ./auth-service/my_actual_model.pkl ./board-service/my_actual_model.pkl
+
+      # 2. GitHub 컨테이너 저장소(GHCR) 로그인
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -19,16 +30,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      # 2. 서비스별 이미지 빌드 및 푸시
-      # ArgoCD가 최신 이미지를 감지할 수 있도록 :latest 태그로 푸시합니다.
+      # 3. 서비스별 이미지 빌드 및 푸시
+      # 이제 이미지 빌드 시 폴더 안에 있는 my_actual_model.pkl이 포함됩니다.
       - name: Build and Push Images
         run: |
           # 인증 서비스 빌드 및 푸시
           docker build -t ghcr.io/${{ github.actor }}/auth-service:latest ./auth-service
           docker push ghcr.io/${{ github.actor }}/auth-service:latest
-          
+
           # 프론트엔드 빌드 및 푸시
           docker build -t ghcr.io/${{ github.actor }}/frontend:latest ./frontend
           docker push ghcr.io/${{ github.actor }}/frontend:latest
-
-      # 3. 배포(CD)는 서버 안의 ArgoCD가 담당하므로 SSH 접속 단계는 삭제합니다.
