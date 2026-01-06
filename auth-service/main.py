@@ -45,7 +45,7 @@ def read_root():
     return {"Hello": "World from FastAPI"}
 
 # --- [ML 추가] 예측(Prediction) 엔드포인트 ---
-app.post("/predict")
+@app.post("/predict")
 def predict(payload: Any):  # Any를 사용하여 우선 데이터를 모두 받습니다.
     if model is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
