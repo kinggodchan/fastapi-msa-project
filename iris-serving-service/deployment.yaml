@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iris-serving-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: iris-serving-service }
+  template:
+    metadata:
+      labels: { app: iris-serving-service }
+    spec:
+      # ⚠️ 중요: EKS에서 S3에 접근할 수 있게 해주는 권한 설정입니다. (나중에 생성 필요)
+      serviceAccountName: sagemaker-s3-access-sa
+      containers:
+      - name: iris-serving-app
+        # 사용자님의 GHCR 경로에 맞게 설정 (kinggodchan)
+        image: ghcr.io/kinggodchan/iris-serving-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iris-serving-service
+spec:
+  selector: { app: iris-serving-service }
+  ports:
+  - port: 8080
+    targetPort: 8080
