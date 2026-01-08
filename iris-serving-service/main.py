@@ -16,21 +16,24 @@ model = None
 def load_model_from_s3():
     global model
     try:
-        # 1. 설정을 최소화하여 VPC 엔드포인트가 자동으로 작동하게 합니다.
+        # 🚀 수정 핵심: addressing_style을 'path'로 설정하여 점(.)이 포함된 버킷 문제를 해결합니다.
         s3_config = Config(
             region_name=settings.AWS_REGION,
             signature_version='s3v4',
-            connect_timeout=5,
-            read_timeout=5
+            s3={'addressing_style': 'path'}, 
+            connect_timeout=10,
+            read_timeout=10
         )
 
-        # 🚀 수정 포인트: endpoint_url을 삭제하여 AWS 내부망을 타게 합니다.
+        # endpoint_url 없이 기본 클라이언트를 생성하여 VPC 엔드포인트를 타게 합니다.
         s3 = boto3.client('s3', config=s3_config)
 
-        # flush=True를 넣어 로그가 즉시 찍히게 합니다.
         print(f"🚀 Attempting to connect to S3 Bucket: {settings.BUCKET_NAME}", flush=True)
+
+        # Key 값의 시작 부분에 혹시 모를 '/' 제거
+        model_key = settings.MODEL_S3_KEY.lstrip('/')
         
-        response = s3.get_object(Bucket=settings.BUCKET_NAME, Key=settings.MODEL_S3_KEY)
+        response = s3.get_object(Bucket=settings.BUCKET_NAME, Key=model_key)
 
         with tarfile.open(fileobj=io.BytesIO(response['Body'].read()), mode="r:gz") as tar:
             content = tar.extractfile("model.joblib")
@@ -39,7 +42,6 @@ def load_model_from_s3():
         print("✅ SageMaker ML Model loaded successfully from S3", flush=True)
 
     except Exception as e:
-        # 에러 종류를 파악하기 위해 type(e)를 추가합니다.
         print(f"❌ Model load failed: {type(e).__name__} - {str(e)}", flush=True)
 
 @app.on_event("startup")
@@ -54,7 +56,6 @@ def health():
 @app.post("/predict")
 async def predict(data: List[List[float]]):
     if model is None:
-        # 모델이 안 로드되었을 때의 상태를 명확히 반환
         raise HTTPException(status_code=503, detail="Model is not loaded yet")
 
     df = pd.DataFrame(data)
