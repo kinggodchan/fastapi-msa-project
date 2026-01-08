@@ -16,24 +16,30 @@ model = None
 def load_model_from_s3():
     global model
     try:
-        # 🚀 수정 핵심: addressing_style을 'path'로 설정하여 점(.)이 포함된 버킷 문제를 해결합니다.
+        # 🚀 수정 핵심:
+        # 1. region_name을 명시
+        # 2. endpoint_url을 https://s3.ap-northeast-2.amazonaws.com 로 고정
+        # 3. addressing_style을 path로 유지
+
+        region = "ap-northeast-2"
         s3_config = Config(
-            region_name=settings.AWS_REGION,
+            region_name=region,
             signature_version='s3v4',
-            s3={'addressing_style': 'path'}, 
+            s3={'addressing_style': 'path'},
             connect_timeout=10,
             read_timeout=10
         )
 
-        # endpoint_url 없이 기본 클라이언트를 생성하여 VPC 엔드포인트를 타게 합니다.
-        s3 = boto3.client('s3', config=s3_config)
+        s3 = boto3.client(
+            's3',
+            config=s3_config,
+            endpoint_url=f"https://s3.{region}.amazonaws.com" # 다시 명시해봅니다.
+        )
 
         print(f"🚀 Attempting to connect to S3 Bucket: {settings.BUCKET_NAME}", flush=True)
 
-        # Key 값의 시작 부분에 혹시 모를 '/' 제거
-        model_key = settings.MODEL_S3_KEY.lstrip('/')
-        
-        response = s3.get_object(Bucket=settings.BUCKET_NAME, Key=model_key)
+        # settings에서 가져온 key 값 확인
+        response = s3.get_object(Bucket=settings.BUCKET_NAME, Key=settings.MODEL_S3_KEY)
 
         with tarfile.open(fileobj=io.BytesIO(response['Body'].read()), mode="r:gz") as tar:
             content = tar.extractfile("model.joblib")
