@@ -12,9 +12,10 @@ spec:
     spec:
       # ⚠️ 중요: EKS에서 S3에 접근할 수 있게 해주는 권한 설정입니다. (나중에 생성 필요)
       serviceAccountName: sagemaker-s3-access-sa
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
       - name: iris-serving-app
-        # 사용자님의 GHCR 경로에 맞게 설정 (kinggodchan)
         image: ghcr.io/kinggodchan/iris-serving-service:latest
         imagePullPolicy: Always
         ports:
