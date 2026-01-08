@@ -3,6 +3,12 @@ name: MSA Monorepo CI (Build and Push)
 on:
   push:
     branches: [ "main" ]
+    # 특정 폴더가 변경될 때만 빌드되도록 설정 (효율적)
+    paths:
+      - 'auth-service/**'
+      - 'frontend/**'
+      - 'iris-serving-service/**'
+      - '.github/workflows/**'
 
 jobs:
   build-and-push:
@@ -11,19 +17,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # [추가된 부분] 1. 구글 드라이브에서 모델 파일 다운로드
-      # 빌드 직전에 모델 파일을 각 서비스 폴더로 배달합니다.
-      - name: Download Model from Google Drive
-        run: |
-          
-          # 1. gdown 도구를 먼저 설치합니다 
-          pip install gdown
-          gdown --id ${{ secrets.MODEL_FILE_ID }} -O ./auth-service/my_actual_model.pkl
-          
-          # 만약 다른 서비스(예: board-service)에서도 사용한다면 복사합니다.
-          # cp ./auth-service/my_actual_model.pkl ./board-service/my_actual_model.pkl
-
-      # 2. GitHub 컨테이너 저장소(GHCR) 로그인
+      # 1. GHCR 로그인 (구글 드라이브 단계는 삭제됨)
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -31,14 +25,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      # 3. 서비스별 이미지 빌드 및 푸시
-      # 이제 이미지 빌드 시 폴더 안에 있는 my_actual_model.pkl이 포함됩니다.
+      # 2. 서비스별 이미지 빌드 및 푸시
       - name: Build and Push Images
         run: |
-          # 인증 서비스 빌드 및 푸시
+          # [1] 인증 서비스 (더 이상 구글 드라이브 모델을 기다리지 않음)
           docker build -t ghcr.io/${{ github.actor }}/auth-service:latest ./auth-service
           docker push ghcr.io/${{ github.actor }}/auth-service:latest
 
-          # 프론트엔드 빌드 및 푸시
+          # [2] 프론트엔드
           docker build -t ghcr.io/${{ github.actor }}/frontend:latest ./frontend
           docker push ghcr.io/${{ github.actor }}/frontend:latest
+
+          # [3] Iris ML 서빙 서비스 (S3 실시간 로드 방식)
+          docker build -t ghcr.io/${{ github.actor }}/iris-serving-service:latest ./iris-serving-service
+          docker push ghcr.io/${{ github.actor }}/iris-serving-service:latest
