@@ -26,7 +26,7 @@ spec:
         - name: DB_PASSWORD
           value: "Password123"
         - name: DB_NAME
-          value: "fastapi_db"
+          value: "iris_db"
 ---
 apiVersion: v1
 kind: Service
