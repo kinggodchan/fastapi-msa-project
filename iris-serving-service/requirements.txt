@@ -3,4 +3,5 @@ uvicorn[standard]
 boto3
 joblib
 pandas
-scikit-learn
+scikit-learn==1.2.1
+numpy<2.0.0
