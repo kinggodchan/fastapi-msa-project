@@ -33,6 +33,7 @@ jobs:
       - name: Build and Push to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: terraform-ecr
         run: |
           # 각 서비스 빌드 및 푸시 (Repository 이름은 테라폼 설정과 맞춰주세요)
           docker build -t $ECR_REGISTRY/auth-service:latest ./auth-service
