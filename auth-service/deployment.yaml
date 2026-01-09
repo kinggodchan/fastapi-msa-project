@@ -13,18 +13,18 @@ spec:
       containers:
       - name: auth-app
         # 1. 태그를 :latest로 고정하여 CI(GitHub Actions)와 일치시킵니다.
-        image: ghcr.io/kinggodchan/auth-service:latest
+        image: 266735812372.dkr.ecr.ap-northeast-2.amazonaws.com/terraform-ecr:auth-latest
         # 2. ArgoCD가 새 이미지를 즉시 감지하고 내려받도록 설정합니다.
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
         env:
         - name: DB_HOST
-          value: "mysql"
+          value: "terraform-mariadb-rds.cbaik064m56k.ap-northeast-2.rds.amazonaws.com"
         - name: DB_USER
           value: "test01"
         - name: DB_PASSWORD
-          value: "P@ssw0rd"
+          value: "Password123"
         - name: DB_NAME
           value: "fastapi_db"
 ---

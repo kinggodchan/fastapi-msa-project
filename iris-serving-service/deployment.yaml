@@ -10,17 +10,29 @@ spec:
     metadata:
       labels: { app: iris-serving-service }
     spec:
-      # ⚠️ 중요: EKS에서 S3에 접근할 수 있게 해주는 권한 설정입니다. (나중에 생성 필요)
-      serviceAccountName: sagemaker-s3-access-sa
-      imagePullSecrets:
-        - name: ghcr-secret
+      # AWS ECR을 사용하므로 기존 ghcr-secret은 더 이상 필요 없습니다. (삭제 혹은 주석)
+      # imagePullSecrets:
+      #   - name: ghcr-secret
+      
       containers:
       - name: iris-serving-app
-        image: ghcr.io/kinggodchan/iris-serving-service:latest
+        # 1. 수정: AWS ECR 주소와 iris-latest 태그 사용
+        image: 266735812372.dkr.ecr.ap-northeast-2.amazonaws.com/terraform-ecr:iris-latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
         env:
+        # 2. DB 연결 정보 (MariaDB RDS 엔드포인트)
+        - name: DB_HOST
+          value: "terraform-mariadb-rds.cbaik064m56k.ap-northeast-2.rds.amazonaws.com"
+        - name: DB_USER
+          value: "test01"
+        - name: DB_PASSWORD
+          value: "password123"
+        - name: DB_NAME
+          value: "fastapi_db"
+
+        # 3. 기존 S3 인증 구조 유지 (Kubernetes Secret 참조)
         - name: AWS_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:

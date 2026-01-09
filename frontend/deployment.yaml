@@ -12,9 +12,17 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: ghcr.io/kinggodchan/frontend:v1.0.2
+        # 1. 수정: GHCR 대신 AWS ECR 주소와 frontend-latest 태그 사용
+        image: 266735812372.dkr.ecr.ap-northeast-2.amazonaws.com/terraform-ecr:frontend-latest
+        
+        # 2. 추가: 새 이미지를 즉시 반영하도록 설정
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
+        env:
+        # 3. 추가: 프론트엔드가 백엔드 API를 찾을 때 필요한 주소 (내부 서비스 이름)
+        - name: NEXT_PUBLIC_API_URL
+          value: "http://auth-service:8000"
 ---
 apiVersion: v1
 kind: Service
