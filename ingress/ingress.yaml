@@ -3,12 +3,16 @@ kind: Ingress
 metadata:
   name: msa-ingress
   annotations:
+    # 경로 뒤의 정규표현식 그룹($2)을 타겟 서비스로 전달합니다.
     nginx.ingress.kubernetes.io/rewrite-target: /$2
+    # ★ 여기 추가 ★: 정규표현식을 사용함을 명시합니다.
+    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   ingressClassName: nginx
   rules:
   - http:
       paths:
+      # 1. 인증 서비스
       - path: /api/auth(/|$)(.*)
         pathType: ImplementationSpecific
         backend:
@@ -16,17 +20,25 @@ spec:
             name: auth-service
             port:
               number: 8000
+      # 2. 게시판 서비스
       - path: /api/board(/|$)(.*)
         pathType: ImplementationSpecific
-
         backend:
           service:
             name: board-service
             port:
               number: 8000
+      # 3. 부동산 AI 서비스
+      - path: /api/ai(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: real-estate-ai-service
+            port:
+              number: 80
+      # 4. 프론트엔드
       - path: /()(.*)
         pathType: ImplementationSpecific
-
         backend:
           service:
             name: frontend
