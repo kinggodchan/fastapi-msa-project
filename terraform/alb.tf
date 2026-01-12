@@ -1,45 +1,57 @@
-# ALB 생성
-resource "aws_lb" "king_alb" {
-  name               = "king-alb"
+# 1. Application Load Balancer
+resource "aws_lb" "alb" {
+  name               = "terraform-king-alb" # 직접 이름 지정
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.terraform_sg_alb.id]
-  subnets            = [aws_subnet.PUB_subnet_2A.id, aws_subnet.PUB_subnet_2C.id] # 퍼블릭 서브넷 사용
 
-  tags = { Name = "king-alb" }
-}
+  # ✅ 직접 서브넷 참조 (03-subnet.tf에서 정의한 이름 사용)
+  subnets = [aws_subnet.PUB_subnet_2A.id, aws_subnet.PUB_subnet_2C.id]
 
-# 대상 그룹(Target Group) - 나중에 EKS 서비스와 연결될 곳
-resource "aws_lb_target_group" "tg" {
-  name     = "king-alb-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.king_vpc.id
-
-  health_check {
-    path     = "/"
-    matcher  = "200"
-    interval = 30
-    timeout  = 5
+  tags = {
+    Name = "terraform-king-alb"
   }
 }
 
-# 리스너 (HTTP -> HTTPS 리다이렉트 설정도 가능하지만 우선 80 오픈)
-resource "aws_lb_listener" "http" {
-  load_balancer_arn = aws_lb.king_alb.arn
-  port              = "80"
+# 2. Target Group
+resource "aws_lb_target_group" "tg" {
+  name     = "terraform-king-tg"
+  port     = 80
+  protocol = "HTTP"
+
+  # ✅ 직접 VPC 참조 (02-vpc.tf에서 정의한 이름 사용)
+  vpc_id = aws_vpc.king_vpc.id
+
+  health_check {
+    path                = "/health"
+    matcher             = "200"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+}
+
+# 3. HTTP 리스너 (Redirect to HTTPS)
+resource "aws_lb_listener" "http_listener" {
+  load_balancer_arn = aws_lb.alb.arn
+  port              = 80
   protocol          = "HTTP"
 
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.tg.arn
+    type = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
   }
 }
 
-# 리스너 (HTTPS 443 추가 - 인증서 연결)
-resource "aws_lb_listener" "https" {
-  load_balancer_arn = aws_lb.king_alb.arn
-  port              = "443"
+# 4. HTTPS 리스너
+resource "aws_lb_listener" "https_listener" {
+  load_balancer_arn = aws_lb.alb.arn
+  port              = 443
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-2016-08"
   certificate_arn   = aws_acm_certificate.cert.arn
@@ -48,7 +60,4 @@ resource "aws_lb_listener" "https" {
     type             = "forward"
     target_group_arn = aws_lb_target_group.tg.arn
   }
-
-  # 📍 수정 포인트: cert_validation 대신 cert_valid (위에서 추가한 것)를 기다리게 합니다.
-  depends_on = [aws_acm_certificate_validation.cert_valid]
 }

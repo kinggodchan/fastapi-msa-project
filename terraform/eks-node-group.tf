@@ -1,4 +1,4 @@
-# Node Group IAM Role 생성
+# 1. Node Group IAM Role 생성
 resource "aws_iam_role" "terraform_eks_node_group_role" {
   name = "terraform-eks-node-group-role"
   assume_role_policy = jsonencode({
@@ -15,7 +15,7 @@ resource "aws_iam_role" "terraform_eks_node_group_role" {
   })
 }
 
-# IAM Role에 정책 추가
+# 2. IAM Role에 기본 정책 추가
 resource "aws_iam_role_policy_attachment" "AmazonEKS_CNI_Policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
   role       = aws_iam_role.terraform_eks_node_group_role.name
@@ -31,15 +31,38 @@ resource "aws_iam_role_policy_attachment" "AmazonEKSWorkerNodePolicy" {
   role       = aws_iam_role.terraform_eks_node_group_role.name
 }
 
-# Node Group 생성
+# 3. S3 접근을 위한 추가 IAM Policy 생성
+resource "aws_iam_policy" "node_s3_policy" {
+  name        = "terraform-sg-eks-s3-access"
+  description = "Allow EKS nodes to access model S3 bucket"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = ["s3:GetObject", "s3:PutObject", "s3:ListBucket"]
+        Effect = "Allow"
+        Resource = [
+          "${aws_s3_bucket.model_bucket.arn}",
+          "${aws_s3_bucket.model_bucket.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
+# 4. S3 Policy를 Role에 연결
+resource "aws_iam_role_policy_attachment" "node_s3_attach" {
+  policy_arn = aws_iam_policy.node_s3_policy.arn
+  role       = aws_iam_role.terraform_eks_node_group_role.name
+}
+
+# 5. Node Group 생성 (S3 권한 의존성 추가)
 resource "aws_eks_node_group" "terraform_eks_node_group" {
-  # 📍 위에서 정의한 클러스터 이름 참조
   cluster_name    = aws_eks_cluster.terraform_eks_cluster.name
   node_group_name = "terraform-eks-node-group"
   node_role_arn   = aws_iam_role.terraform_eks_node_group_role.arn
-
-  # 📍 사용자님의 프라이빗 서브넷 이름으로 수정 완료
-  subnet_ids = [aws_subnet.PRI_subnet_2A.id, aws_subnet.PRI_subnet_2C.id]
+  subnet_ids      = [aws_subnet.PRI_subnet_2A.id, aws_subnet.PRI_subnet_2C.id]
 
   tags = {
     "k8s.io/cluster-autoscaler/enabled"               = "true"
@@ -52,15 +75,15 @@ resource "aws_eks_node_group" "terraform_eks_node_group" {
     min_size     = 2
   }
 
-  ami_type = "AL2_x86_64"
-  # 📍 t3.large는 비용이 많이 발생할 수 있어 학습용으로는 t3.medium을 추천하지만, 
-  # 무거운 앱이라면 그대로 large를 쓰셔도 됩니다.
+  ami_type       = "AL2_x86_64"
   instance_types = ["t3.medium"]
   disk_size      = 20
 
+  # 핵심: 모든 정책 연결이 완료된 후 노드 그룹이 생성되도록 지정
   depends_on = [
     aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy,
     aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly,
-    aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy
+    aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy,
+    aws_iam_role_policy_attachment.node_s3_attach # 추가됨
   ]
 }
