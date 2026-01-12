@@ -47,7 +47,7 @@ resource "aws_db_instance" "mariadb_rds" {
 
   # ✅ 사용자 및 비밀번호 설정 (collector.py와 일치 권장)
   username = "test01"
-  password = "P@ssw0rd" #
+  password = "password123" #
 
   parameter_group_name = aws_db_parameter_group.mariadb_param.name
   db_subnet_group_name = aws_db_subnet_group.rds_subnet_group.name
@@ -62,3 +62,4 @@ resource "aws_db_instance" "mariadb_rds" {
     Name = "terraform-mariadb-rds"
   }
 }
+
